@@ -1,0 +1,159 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  NATIONAL_ADMIN
+  MEMBERSHIP_OFFICER
+  CHAPTER_ADMIN
+  CLAIMS_OFFICER
+  TREASURER
+  AUDITOR
+  MEMBER
+}
+
+enum ApplicationStatus {
+  DRAFT
+  SUBMITTED
+  NEEDS_CORRECTION
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum MemberStatus {
+  ACTIVE
+  INACTIVE
+  DECEASED
+  SUSPENDED
+}
+
+enum IdentifierType {
+  GV
+  HOH_GV
+  LEGACY
+  OTHER
+}
+
+model User {
+ id String @id @default(uuid())
+ email String @unique
+ passwordHash String
+ role Role @default(MEMBER)
+ chapterId String?
+ chapter Chapter? @relation(fields:[chapterId],references:[id])
+ createdAt DateTime @default(now())
+ decisions Decision[]
+ auditLogs AuditLog[]
+}
+model Chapter {
+ id String @id @default(uuid())
+ name String @unique
+ code String @unique
+ active Boolean @default(true)
+ users User[]
+ applications Application[]
+ members Member[]
+ households Household[]
+}
+model Household {
+ id String @id @default(uuid())
+ label String
+ chapterId String?
+ chapter Chapter? @relation(fields:[chapterId],references:[id])
+ members Member[]
+ identifiers GVIdentifier[]
+ createdAt DateTime @default(now())
+}
+model Application {
+ id String @id @default(uuid())
+ reference String @unique
+ firstName String
+ lastName String
+ email String?
+ phone String?
+ dateOfBirth DateTime?
+ address String?
+ chapterId String?
+ chapter Chapter? @relation(fields:[chapterId],references:[id])
+ householdLabel String?
+ claimedGV String?
+ claimedHOHGV String?
+ source String @default("SELF_SERVICE")
+ applicantAttested Boolean @default(false)
+ applicantConsentAt DateTime?
+ submittedById String?
+ status ApplicationStatus @default(SUBMITTED)
+ submittedAt DateTime @default(now())
+ reviewedAt DateTime?
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ decisions Decision[]
+ member Member?
+ @@index([status,submittedAt])
+ @@index([lastName,firstName])
+}
+model Decision {
+ id String @id @default(uuid())
+ applicationId String
+ application Application @relation(fields:[applicationId],references:[id])
+ actorId String
+ actor User @relation(fields:[actorId],references:[id])
+ action String
+ note String?
+ createdAt DateTime @default(now())
+}
+model Member {
+ id String @id @default(uuid())
+ applicationId String @unique
+ application Application @relation(fields:[applicationId],references:[id])
+ chapterId String?
+ chapter Chapter? @relation(fields:[chapterId],references:[id])
+ householdId String?
+ household Household? @relation(fields:[householdId],references:[id])
+ firstName String
+ lastName String
+ status MemberStatus @default(ACTIVE)
+ joinedAt DateTime @default(now())
+ identifiers GVIdentifier[]
+ @@index([lastName,firstName])
+}
+model GVIdentifier {
+ id String @id @default(uuid())
+ identifier String
+ type IdentifierType
+ memberId String?
+ member Member? @relation(fields:[memberId],references:[id])
+ householdId String?
+ household Household? @relation(fields:[householdId],references:[id])
+ source String @default("LEGACY_UNVERIFIED")
+ verified Boolean @default(false)
+ active Boolean @default(true)
+ createdAt DateTime @default(now())
+ @@unique([type,identifier])
+ @@index([memberId])
+ @@index([householdId])
+}
+model SystemSetting {
+ key String @id
+ value String
+ updatedAt DateTime @updatedAt
+}
+model AuditLog {
+ id String @id @default(uuid())
+ actorId String?
+ actor User? @relation(fields:[actorId],references:[id])
+ action String
+ targetType String
+ targetId String
+ details Json?
+ createdAt DateTime @default(now())
+ @@index([targetType,targetId])
+}

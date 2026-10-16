@@ -1,0 +1,15 @@
+
+services:
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "127.0.0.1:55432:5432"
+    environment:
+      POSTGRES_DB: gms
+      POSTGRES_USER: gms
+      POSTGRES_PASSWORD: gmsdev
+    volumes:
+      - gms_pg:/var/lib/postgresql/data
+
+volumes:
+  gms_pg:

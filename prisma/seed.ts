@@ -1,0 +1,3 @@
+import {PrismaClient} from "@prisma/client";
+import {hash} from "bcryptjs";
+const db=new PrismaClient();async function main(){const email=process.env.ADMIN_EMAIL,password=process.env.ADMIN_PASSWORD;if(!email||!password||password.length<14||password==="CHANGE_ME_BEFORE_SEED")throw Error("Set strong ADMIN_EMAIL and ADMIN_PASSWORD before seeding");await db.user.upsert({where:{email:email.toLowerCase()},update:{},create:{email:email.toLowerCase(),passwordHash:await hash(password,12),role:"SUPER_ADMIN"}});await db.systemSetting.upsert({where:{key:"gv_allocation_mode"},update:{},create:{key:"gv_allocation_mode",value:"UNRESOLVED_MANUAL_REVIEW"}});console.log("Admin seeded; GV issuance disabled until policy approval");}main().finally(()=>db.$disconnect());
