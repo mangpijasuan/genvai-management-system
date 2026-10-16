@@ -1,3 +1,13 @@
-"use client";
-import {useState} from "react";
-export default function New(){const [result,setResult]=useState("");async function submit(e:React.FormEvent<HTMLFormElement>){e.preventDefault();const f=new FormData(e.currentTarget);const body={...Object.fromEntries(f.entries()),applicantAttested:f.get("applicantAttested")==="on",source:"STAFF_ASSISTED"};const res=await fetch("/api/applications",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const data=await res.json();setResult(res.ok?`Created application ${data.reference}`:data.error||"Failed");}return <div className="max-w-2xl"><h1 className="text-3xl font-bold mb-2">Staff-assisted enrollment</h1><p className="muted mb-5">Only authorized staff can submit on behalf of an applicant. Preserve evidence of applicant authorization.</p><form onSubmit={submit} className="card grid gap-4">{["firstName","lastName","email","phone","address","householdLabel","claimedGV","claimedHOHGV"].map(x=><div key={x}><label className="label">{x}</label><input name={x} required={x==="firstName"||x==="lastName"}/></div>)}<label><input className="!w-4 mr-2" type="checkbox" name="applicantAttested" required/>Applicant consent confirmed</label><button className="btn">Save submission</button><p role="status">{result}</p></form></div>}
+import { redirect } from "next/navigation";
+import { currentUser, canReview } from "@/lib/auth";
+import { UnifiedEnrollmentForm } from "@/app/components/UnifiedEnrollmentForm";
+
+export default async function StaffAssistedEnrollment() {
+  const user = await currentUser();
+  if (!user) redirect("/login");
+  if (!canReview(user.role)) return <p>Access denied.</p>;
+  return <div className="space-y-4">
+    <div className="card"><h2 className="font-bold">Staff-assisted enrollment</h2><p className="muted text-sm">Enter only information authorized by the applicant. Central approval is required.</p></div>
+    <UnifiedEnrollmentForm source="STAFF_ASSISTED" />
+  </div>;
+}

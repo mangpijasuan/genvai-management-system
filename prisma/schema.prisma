@@ -1,47 +1,40 @@
-
 generator client {
-  provider = "prisma-client-js"
+ provider = "prisma-client-js"
 }
-
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+ provider = "postgresql"
+ url = env("DATABASE_URL")
 }
-
 enum Role {
-  SUPER_ADMIN
-  NATIONAL_ADMIN
-  MEMBERSHIP_OFFICER
-  CHAPTER_ADMIN
-  CLAIMS_OFFICER
-  TREASURER
-  AUDITOR
-  MEMBER
+ SUPER_ADMIN
+ NATIONAL_ADMIN
+ MEMBERSHIP_OFFICER
+ CHAPTER_ADMIN
+ CLAIMS_OFFICER
+ TREASURER
+ AUDITOR
+ MEMBER
 }
-
 enum ApplicationStatus {
-  DRAFT
-  SUBMITTED
-  NEEDS_CORRECTION
-  UNDER_REVIEW
-  APPROVED
-  REJECTED
+ DRAFT
+ SUBMITTED
+ NEEDS_CORRECTION
+ UNDER_REVIEW
+ APPROVED
+ REJECTED
 }
-
 enum MemberStatus {
-  ACTIVE
-  INACTIVE
-  DECEASED
-  SUSPENDED
+ ACTIVE
+ INACTIVE
+ DECEASED
+ SUSPENDED
 }
-
 enum IdentifierType {
-  GV
-  HOH_GV
-  LEGACY
-  OTHER
+ GV
+ HOH_GV
+ LEGACY
+ OTHER
 }
-
 model User {
  id String @id @default(uuid())
  email String @unique
@@ -73,6 +66,9 @@ model Household {
  createdAt DateTime @default(now())
 }
 model Application {
+ applicationType String @default("INDIVIDUAL")
+ familyMembers FamilyAdditionApplicant[]
+
  id String @id @default(uuid())
  reference String @unique
  firstName String
@@ -156,4 +152,17 @@ model AuditLog {
  details Json?
  createdAt DateTime @default(now())
  @@index([targetType,targetId])
+}
+
+// Family members are pending application data until central approval.
+model FamilyAdditionApplicant {
+ id String @id @default(uuid())
+ applicationId String
+ application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+ fullName String
+ relationship String
+ dateOfBirth DateTime?
+ proposedPaymentCents Int?
+ createdAt DateTime @default(now())
+ @@index([applicationId])
 }
